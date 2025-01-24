@@ -9,7 +9,7 @@ let buildingsList = [];     // List of buildings for search functionality
 let markers = [];           // Array to store route markers
 let startPoint;             // Starting point for route calculation
 
-// map with clean interface
+// map with clean interface and street view
 function initializeMap() {
     console.log('Initializing map...');
     
@@ -18,15 +18,10 @@ function initializeMap() {
         attributionControl: false
     }).setView([51.9607, 7.6257], 14);
 
-    // Add clean map background
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19
-    }).addTo(map);
-
-    // Add zoom control in better position
-    L.control.zoom({
-        position: 'bottomright'
-    }).addTo(map);
+    // Add map layers and controls
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.control.scale({ position: 'bottomleft' }).addTo(map);
 
     // Set up click handler for route creation
     map.on('click', handleMapClick);
@@ -79,6 +74,7 @@ async function loadBuildingData() {
         }));
 
         displayFilteredFeatures('all'); // Initial display of all features
+        populateSidebar(); // Populate the sidebar with university names
         console.log('Buildings layer added to map');
     } catch (error) {
         console.error('Error loading buildings:', error);
@@ -110,7 +106,6 @@ function getMarkerIcon(feature) {
     }
 }
 
-
 function displayFilteredFeatures(filterType) {
     if (buildingsLayer) {
         map.removeLayer(buildingsLayer);
@@ -129,7 +124,6 @@ function displayFilteredFeatures(filterType) {
             return feature.properties.university != null;
         }
         return false;
-        
     });
 
     buildingsLayer = L.geoJSON({ features: filteredFeatures.map(f => ({
@@ -149,8 +143,8 @@ function displayFilteredFeatures(filterType) {
                     ${feature.properties['addr:street'] ? `<p>Address: ${feature.properties['addr:street']}</p>` : ''}
                     ${feature.properties['addr:postcode'] ? `<p>Postcode: ${feature.properties['addr:postcode']}</p>` : ''}
                     <button onclick="routeToBuilding('${feature.properties.name}')">
-                                Route to this destination
-                            </button>
+                        Route to this destination
+                    </button>
                 </div>
             `;
             layer.bindPopup(popupContent);
@@ -158,6 +152,53 @@ function displayFilteredFeatures(filterType) {
     }).addTo(map);
 
     updateStatus(`${filteredFeatures.length} features displayed`);
+}
+
+// Populate the sidebar with university names
+function populateSidebar() {
+    const universityList = document.getElementById('universityList');
+    universityList.innerHTML = '';
+
+    buildingsList.forEach(building => {
+        if (building.properties.university) {
+            const listItem = document.createElement('li');
+            listItem.textContent = building.name;
+            listItem.onclick = () => {
+                const coords = building.geometry.coordinates;
+                let latlng;
+                if (building.geometry.type === 'Polygon') {
+                    latlng = getPolygonCentroid(coords[0]);
+                } else if (building.geometry.type === 'Point') {
+                    latlng = [coords[1], coords[0]];
+                } else {
+                    console.error('Unsupported geometry type for building:', building);
+                    updateStatus('Unsupported geometry type for selected building');
+                    return;
+                }
+                map.setView(latlng, 17);
+                L.popup()
+                    .setLatLng(latlng)
+                    .setContent(`<h3>${building.name}</h3>`)
+                    .openOn(map);
+            };
+            universityList.appendChild(listItem);
+        }
+    });
+}
+
+// Function to calculate the centroid of a polygon
+function getPolygonCentroid(coords) {
+    let centroid = coords.reduce((acc, coord) => {
+        return {
+            lat: acc.lat + coord[1],
+            lng: acc.lng + coord[0]
+        };
+    }, { lat: 0, lng: 0 });
+
+    centroid.lat /= coords.length;
+    centroid.lng /= coords.length;
+
+    return [centroid.lat, centroid.lng];
 }
 
 // Calculating route between points
@@ -257,7 +298,6 @@ async function routeToBuilding(buildingName) {
         updateStatus('Building not found or invalid geometry');
     }
 }
-
 
 // Clearing existing route and markers
 function clearRoute() {

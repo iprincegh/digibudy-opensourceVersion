@@ -1,3 +1,4 @@
+<!-- filepath: /Users/iprincetech/Downloads/Digibuddy_routes-2/templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,6 +108,23 @@
             margin-bottom: 15px;
         }
 
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            padding: 10px;
+            cursor: pointer;
+            background: #495057;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .sidebar ul li:hover {
+            background: #6c757d;
+        }
+
         /* Footer styling */
         footer {
             background: #343a40;
@@ -200,6 +218,8 @@
         <div class="control">
             <button id="locateMe">🔍 Locate Me</button>
         </div>
+        <h2>University Buildings</h2>
+        <ul id="universityList"></ul>
     </div>
 
     <div class="main-content" id="main-content">
