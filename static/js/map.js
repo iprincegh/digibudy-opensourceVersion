@@ -6,8 +6,8 @@ let buildingsLayer;         // GeoJSON layer for university buildings
 let routeLayer;             // Layer for displaying navigation routes
 let selectedBuilding;       // Currently selected building
 let buildingsList = [];     // List of buildings for search functionality
-let markers = [];          // Array to store route markers
-let startPoint;            // Starting point for route calculation
+let markers = [];           // Array to store route markers
+let startPoint;             // Starting point for route calculation
 
 // map with clean interface
 function initializeMap() {
@@ -73,58 +73,70 @@ async function loadBuildingData() {
 
         // Storing building data for search
         buildingsList = data.features.map(feature => ({
-            name: feature.properties.name || 'Unnamed Building',
+            name: feature.properties.name || 'Unnamed Feature',
             geometry: feature.geometry,
             properties: feature.properties
         }));
 
-        buildingsLayer = L.geoJSON(data, {
-            style: {
-            color: "#e74c3c",
-            weight: 2,
-            opacity: 0.8,
-            fillColor: "#c0392b",
-            fillOpacity: 0.35
-            },
-            onEachFeature: (feature, layer) => {
-                // popup with routing button
-                if (feature.properties) {
-                    const popupContent = `
-                        <div class="building-popup">
-                            <h3>${feature.properties.name || 'University Building'}</h3>
-                            <button onclick="routeToBuilding('${feature.properties.name}')">
-                                Route to this destination
-                            </button>
-                        </div>
-                    `;
-                    layer.bindPopup(popupContent);
-                }
-
-                // Add hover effects
-                layer.on({
-                    mouseover: () => {
-                        layer.setStyle({
-                            weight: 3,
-                            color: '#3498db',
-                            fillOpacity: 0.5
-                        });
-                    },
-                    mouseout: () => {
-                        if (layer !== selectedBuilding) {
-                            buildingsLayer.resetStyle(layer);
-                        }
-                    },
-                    click: () => selectBuilding(layer, feature)
-                });
-            }
-        }).addTo(map);
-
+        displayFilteredFeatures('all'); // Initial display of all features
         console.log('Buildings layer added to map');
-        updateStatus('Buildings loaded');
     } catch (error) {
         console.error('Error loading buildings:', error);
         updateStatus('Failed to load buildings');
     }
+}
+
+function displayFilteredFeatures(filterType) {
+    if (buildingsLayer) {
+        map.removeLayer(buildingsLayer);
+    }
+
+    // Filter features based on selected type
+    const filteredFeatures = buildingsList.filter(feature => {
+        if (filterType === 'all') {
+            return true; // Display all features
+        } else if (filterType === 'amenity') {
+            const amenityTypes = ['restaurant', 'bar', 'cafe', 'fast_food', 'food_court', 'ice_cream'];
+            return amenityTypes.includes(feature.properties.amenity);
+        } else if (filterType === 'tourism') {
+            return feature.properties.tourism != null;
+        } else if (filterType === 'university') {
+            return feature.properties.university != null;
+        }
+        return false;
+        
+    });
+
+    buildingsLayer = L.geoJSON({ features: filteredFeatures.map(f => ({
+        type: 'Feature',
+        geometry: f.geometry,
+        properties: f.properties
+    })) }, {
+        style: {
+            color: "#3498db",
+            weight: 2,
+            opacity: 0.8,
+            fillColor: "#2980b9",
+            fillOpacity: 0.4
+        },
+        onEachFeature: (feature, layer) => {
+            const popupContent = `
+                <div class="feature-popup">
+                    <h3>${feature.properties.name || 'Unnamed Feature'}</h3>
+                    ${feature.properties.amenity ? `<p>Amenity: ${feature.properties.amenity}</p>` : ''}
+                    ${feature.properties.tourism ? `<p>Tourism: ${feature.properties.tourism}</p>` : ''}
+                    ${feature.properties['addr:street'] ? `<p>Address: ${feature.properties['addr:street']}</p>` : ''}
+                    ${feature.properties['addr:postcode'] ? `<p>Postcode: ${feature.properties['addr:postcode']}</p>` : ''}
+                    <button onclick="routeToBuilding('${feature.properties.name}')">
+                                Route to this destination
+                            </button>
+                </div>
+            `;
+            layer.bindPopup(popupContent);
+        }
+    }).addTo(map);
+
+    updateStatus(`${filteredFeatures.length} features displayed`);
 }
 
 // Calculating route between points
@@ -153,9 +165,9 @@ async function calculateRoute(start, end, mode) {
         const data = await response.json();
         return L.geoJSON(data, {
             style: {
-                color: '#3388ff',
-                weight: 6,
-                opacity: 0.6
+                color: '#3498db',
+                weight: 8,
+                opacity: 1.0
             }
         });
     } catch (error) {
@@ -265,53 +277,68 @@ function setupLocationTracking() {
     });
 }
 
-// start tracking location
-function startLocationTracking() {
-    updateStatus('Finding your location...');
-    map.locate({
-        watch: true,
-        enableHighAccuracy: true,
-        timeout: 5000
+// Add dropdown listener for filtering
+function addFilterListener() {
+    document.getElementById('featureFilter').addEventListener('change', function() {
+        const selectedFilter = this.value;
+        displayFilteredFeatures(selectedFilter);
     });
 }
 
-// Helper function to update status
+function setupLocationTracking() {
+    map.on('locationfound', function (e) {
+        const radius = e.accuracy / 2;
+
+        if (userLocationMarker) {
+            userLocationMarker.setLatLng(e.latlng);
+            userLocationCircle.setLatLng(e.latlng);
+            userLocationCircle.setRadius(radius);
+        } else {
+            userLocationMarker = L.marker(e.latlng).addTo(map);
+            userLocationCircle = L.circle(e.latlng, {
+                radius: radius,
+                color: '#4299e1',
+                fillColor: '#4299e1',
+                fillOpacity: 0.15
+            }).addTo(map);
+        }
+
+        updateStatus('Location found');
+    });
+
+    map.on('locationerror', function (e) {
+        console.error('Location error:', e.message);
+        updateStatus('Could not find location');
+    });
+}
+
+function startLocationTracking() {
+    map.locate({ setView: true, maxZoom: 16 });
+}
+
 function updateStatus(message) {
     const status = document.getElementById('statusText');
     if (status) {
         status.textContent = message;
+    } else {
+        console.warn('Status element not found');
     }
 }
 
-// Loading everything when page loads
-document.addEventListener('DOMContentLoaded', async function() {
+// Initialize map and features
+document.addEventListener('DOMContentLoaded', async function () {
     try {
         initializeMap();
-        setupLocationTracking();
-        startLocationTracking();
-        await loadBuildingData();
-        
-        // event listeners
-        document.getElementById('locateMe').addEventListener('click', function() {
+        setupLocationTracking(); // This ensures location tracking is initialized
+        startLocationTracking(); // Optional: Auto-start tracking if required
+        await loadBuildingData(); // Load building data into the map
+        addFilterListener(); // Add dropdown filter functionality
+
+        document.getElementById('locateMe').addEventListener('click', function () {
             if (userLocationMarker) {
                 map.setView(userLocationMarker.getLatLng(), 17);
             } else {
                 startLocationTracking();
-            }
-        });
-
-        // travel modes
-        document.getElementById('travelMode').addEventListener('change', async function() {
-            if (markers.length === 2) {
-                const start = markers[0].getLatLng();
-                const end = markers[1].getLatLng();
-                clearRoute();
-                markers = [
-                    L.marker([start.lat, start.lng]).addTo(map),
-                    L.marker([end.lat, end.lng]).addTo(map)
-                ];
-                routeLayer = await calculateRoute(start, end, this.value);
-                if (routeLayer) routeLayer.addTo(map);
             }
         });
 

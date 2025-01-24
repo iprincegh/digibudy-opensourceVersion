@@ -26,7 +26,7 @@ def load_api_key():
         logger.error(f"Error reading .env file directly: {str(e)}")
 
     # Try environment variable if file reading fails
-    api_key = os.getenv('5b3ce3597851110001cf62482036f455ddcf48c88dae5f29019d90b1')
+    api_key = os.getenv('ORS_API_KEY')
     if api_key:
         logger.info("Successfully loaded API key from environment")
         return api_key
@@ -55,7 +55,7 @@ def get_buildings():
     try:
         logger.debug("Attempting to read building data file")
         
-        file_path = r'/Users/iprincetech/Downloads/Digibuddy_routes-2/static/data/digibuddy_data.geojson'
+        file_path = os.path.join(os.getcwd(), 'static', 'data', 'digibuddy_data.geojson')
         if not os.path.exists(file_path):
             logger.error(f"Building data file not found at: {file_path}")
             return jsonify({"error": "Building data file not found"}), 404

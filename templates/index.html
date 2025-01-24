@@ -1,4 +1,3 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -70,12 +69,17 @@
   </head>
   <body>
     <div class="controls-container">
+      <select id="featureFilter" class="control-button">
+          <option value="all">All Features</option>
+          <option value="amenity">Restaurants</option>
+          <option value="tourism">Tourism</option>
+          <option value="university">University Buildings</option>
+      </select>
       <button id="locateMe" class="control-button">🔍 My Location</button>
-      <button id="findBuilding" class="control-button">🏛️ Find Building</button>
       <select id="travelMode" class="control-button">
-        <option value="foot-walking">Walking</option>
-        <option value="cycling-regular">Cycling</option>
-        <option value="driving-car">Driving</option>
+          <option value="foot-walking">Walking</option>
+          <option value="cycling-regular">Cycling</option>
+          <option value="driving-car">Driving</option>
       </select>
     </div>
 
