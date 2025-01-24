@@ -64,7 +64,7 @@
             position: fixed;
             top: 60px;
             left: 0;
-            height: calc(100%);
+            height: 100%;
             width: 250px;
             background: #343a40;
             color: white;
@@ -155,18 +155,19 @@
         .toggle-sidebar {
             background: #343a40;
             color: white;
-            padding: 10px;
-            position: absolute;
-            top: 15px;
+            padding: 5px;
+            position: fixed;
+            top: 8px;
             left: 15px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             z-index: 1000;
+            font-size: 2rem;
         }
 
         .toggle-sidebar:hover {
-            background: #383838;
+            background: #282828;
         }
 
         @media (max-width: 768px) {
@@ -199,26 +200,26 @@
     <div class="sidebar" id="sidebar">
         <h2>Navigation Controls</h2>
         <div class="control">
-            <label for="featureFilter">Filter Features:</label>
+            <label for="featureFilter">Place Filter:</label>
             <select id="featureFilter">
-                <option value="all">All Features</option>
+                <option value="all">All Places</option>
                 <option value="amenity">Restaurants</option>
-                <option value="tourism">Tourism</option>
+                <option value="tourism">Points of Interest</option>
                 <option value="university">University Buildings</option>
             </select>
         </div>
         <div class="control">
             <label for="travelMode">Travel Mode:</label>
             <select id="travelMode">
-                <option value="foot-walking">Walking</option>
-                <option value="cycling-regular">Cycling</option>
-                <option value="driving-car">Driving</option>
+                <option value="foot-walking">Walking 👣</option>
+                <option value="cycling-regular">Cycling 🚲</option>
+                <option value="driving-car">Driving 🚖</option>
             </select>
         </div>
         <div class="control">
             <button id="locateMe">🔍 Locate Me</button>
         </div>
-        <h2>University Buildings</h2>
+        <h2>University Buildings 🏛️</h2>
         <ul id="universityList"></ul>
     </div>
 

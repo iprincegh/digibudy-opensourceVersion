@@ -114,7 +114,7 @@ function displayFilteredFeatures(filterType) {
     // Filter features based on selected type
     const filteredFeatures = buildingsList.filter(feature => {
         if (filterType === 'all') {
-            return true; // Display all features
+            return true;
         } else if (filterType === 'amenity') {
             const amenityTypes = ['restaurant', 'bar', 'cafe', 'fast_food', 'food_court', 'ice_cream'];
             return amenityTypes.includes(feature.properties.amenity);
