@@ -42,7 +42,7 @@ except Exception as e:
     raise
 
 # Main Flask application
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 
 @app.route('/')
 def index():

@@ -86,6 +86,31 @@ async function loadBuildingData() {
     }
 }
 
+function getMarkerIcon(feature) {
+    if (feature.properties.amenity) {
+        return L.icon({
+            iconUrl: '/static/icons/amenity.png',
+            iconSize: [50, 50],
+        });
+    } else if (feature.properties.tourism) {
+        return L.icon({
+            iconUrl: '/static/icons/tourism.png',
+            iconSize: [45, 45],
+        });
+    } else if (feature.properties.university) {
+        return L.icon({
+            iconUrl: '/static/icons/university.png',
+            iconSize: [25, 25],
+        });
+    } else {
+        return L.icon({
+            iconUrl: '/static/icons/default.png',
+            iconSize: [25, 25],
+        });
+    }
+}
+
+
 function displayFilteredFeatures(filterType) {
     if (buildingsLayer) {
         map.removeLayer(buildingsLayer);
@@ -112,12 +137,8 @@ function displayFilteredFeatures(filterType) {
         geometry: f.geometry,
         properties: f.properties
     })) }, {
-        style: {
-            color: "#3498db",
-            weight: 2,
-            opacity: 0.8,
-            fillColor: "#2980b9",
-            fillOpacity: 0.4
+        pointToLayer: (feature, latlng) => {
+            return L.marker(latlng, { icon: getMarkerIcon(feature) });
         },
         onEachFeature: (feature, layer) => {
             const popupContent = `
@@ -284,6 +305,28 @@ function addFilterListener() {
         displayFilteredFeatures(selectedFilter);
     });
 }
+
+document.getElementById('travelMode').addEventListener('change', async function () {
+    if (routeLayer && markers.length >= 2) {
+        const startPoint = markers[0].getLatLng(); // Starting marker
+        const endPoint = markers[1].getLatLng(); // Ending marker
+        const mode = this.value;
+
+        // Clear the existing route
+        clearRoute();
+
+        // Recalculate and display the new route
+        routeLayer = await calculateRoute(startPoint, endPoint, mode);
+
+        if (routeLayer) {
+            routeLayer.addTo(map);
+            map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+            updateStatus('Route updated for new travel mode');
+        } else {
+            updateStatus('Failed to update route for new travel mode');
+        }
+    }
+});
 
 function setupLocationTracking() {
     map.on('locationfound', function (e) {

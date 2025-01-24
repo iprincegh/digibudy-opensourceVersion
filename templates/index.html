@@ -1,102 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Campus Navigation</title>
+    <title>Campus DigiBuddy</title>
 
     <!-- Leaflet CSS -->
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-      }
-      #map {
-        width: 100%;
-        height: 100vh;
-        background: #f8f9fa;
-      }
-      .controls-container {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .search-container {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        z-index: 1000;
-        width: 300px;
-      }
-      .control-button {
-        padding: 10px 15px;
-        background: white;
-        border: none;
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        cursor: pointer;
-      }
-      .search-input {
-        width: 100%;
-        padding: 10px;
-        border: none;
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      #statusText {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 8px 16px;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        border-radius: 20px;
-        z-index: 1000;
-      }
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        #map {
+            width: 100%;
+            height: 90.5%;
+        }
+
+        /* Header styling */
+        header {
+            background: #343a40;
+            color: white;
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            margin-right: 50px;
+        }
+
+        h1 {
+          margin-left: 50px;
+        }
+
+        header nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        header nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        header nav a:hover {
+            text-decoration: underline;
+        }
+
+        /* Sidebar styling */
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            height: calc(100%);
+            width: 250px;
+            background: #343a40;
+            color: white;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 500;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar h2 {
+            font-size: 1.25rem;
+            margin-bottom: 15px;
+        }
+
+        .sidebar .control {
+            margin-bottom: 15px;
+        }
+
+        .sidebar select, .sidebar button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 4px;
+            background: #495057;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .sidebar input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        /* Footer styling */
+        footer {
+            background: #343a40;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        /* Main content styling */
+        .main-content {
+            margin-left: 0;
+            height: 100%;
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        .main-content.shifted {
+            margin-left: 290px;
+        }
+
+        .toggle-sidebar {
+            background: #343a40;
+            color: white;
+            padding: 10px;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .toggle-sidebar:hover {
+            background: #383838;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar.open + .main-content {
+                margin-left:150px;
+            }
+        }
     </style>
-  </head>
-  <body>
-    <div class="controls-container">
-      <select id="featureFilter" class="control-button">
-          <option value="all">All Features</option>
-          <option value="amenity">Restaurants</option>
-          <option value="tourism">Tourism</option>
-          <option value="university">University Buildings</option>
-      </select>
-      <button id="locateMe" class="control-button">🔍 My Location</button>
-      <select id="travelMode" class="control-button">
-          <option value="foot-walking">Walking</option>
-          <option value="cycling-regular">Cycling</option>
-          <option value="driving-car">Driving</option>
-      </select>
+</head>
+<body>
+    <header>
+        <h1>Campus DigiBuddy</h1>
+        <nav>
+            <a href="#">Home</a>
+            <a href="#">About</a>
+            <a href="#">Help</a>
+        </nav>
+    </header>
+
+    <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
+
+    <div class="sidebar" id="sidebar">
+        <h2>Navigation Controls</h2>
+        <div class="control">
+            <label for="featureFilter">Filter Features:</label>
+            <select id="featureFilter">
+                <option value="all">All Features</option>
+                <option value="amenity">Restaurants</option>
+                <option value="tourism">Tourism</option>
+                <option value="university">University Buildings</option>
+            </select>
+        </div>
+        <div class="control">
+            <label for="travelMode">Travel Mode:</label>
+            <select id="travelMode">
+                <option value="foot-walking">Walking</option>
+                <option value="cycling-regular">Cycling</option>
+                <option value="driving-car">Driving</option>
+            </select>
+        </div>
+        <div class="control">
+            <button id="locateMe">🔍 Locate Me</button>
+        </div>
     </div>
 
-    <div class="search-container">
-      <input
-        type="text"
-        id="searchInput"
-        class="search-input"
-        placeholder="Search for buildings..."
-      />
+    <div class="main-content" id="main-content">
+        <div id="map"></div>
     </div>
 
-    <div id="map"></div>
-    <div id="statusText"></div>
+    <footer>
+        <p>&copy; 2025 Campus DigiBuddy | All Rights Reserved</p>
+    </footer>
 
     <!-- Scripts -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            sidebar.classList.toggle('open');
+            mainContent.classList.toggle('shifted');
+        }
+    </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='js/map.js') }}"></script>
-  </body>
+</body>
 </html>
