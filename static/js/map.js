@@ -73,8 +73,8 @@ async function loadBuildingData() {
             properties: feature.properties
         }));
 
-        displayFilteredFeatures('all'); // Initial display of all features
-        populateSidebar(); // Populate the sidebar with university names
+        displayFilteredFeatures('all'); 
+        populateSidebar(); 
         console.log('Buildings layer added to map');
     } catch (error) {
         console.error('Error loading buildings:', error);
