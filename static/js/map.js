@@ -136,13 +136,18 @@ function displayFilteredFeatures(filterType) {
         },
         onEachFeature: (feature, layer) => {
             const popupContent = `
-                <div class="feature-popup">
-                    <h3>${feature.properties.name || 'Unnamed Feature'}</h3>
-                    ${feature.properties.amenity ? `<p>Amenity: ${feature.properties.amenity}</p>` : ''}
-                    ${feature.properties.tourism ? `<p>Tourism: ${feature.properties.tourism}</p>` : ''}
-                    ${feature.properties['addr:street'] ? `<p>Address: ${feature.properties['addr:street']}</p>` : ''}
-                    ${feature.properties['addr:postcode'] ? `<p>Postcode: ${feature.properties['addr:postcode']}</p>` : ''}
-                    <button onclick="routeToBuilding('${feature.properties.name}')">
+                <div class="feature-popup" style="font-family: Arial, sans-serif; color: #333;">
+                    <h3 style="margin-top: 0; color: #2c3e50;">${feature.properties.name || 'Unnamed Feature'}</h3>
+                    ${feature.properties.amenity ? `<p><strong>Type:</strong> ${feature.properties.amenity}</p>` : ''}
+                    ${feature.properties.tourism ? `<p><strong>Tourism:</strong> ${feature.properties.tourism}</p>` : ''}
+                    ${feature.properties['addr:street'] ? `<p><strong>Address:</strong> ${feature.properties['addr:street']}</p>` : ''}
+                    ${feature.properties['addr:postcode'] ? `<p><strong>Postcode:</strong> ${feature.properties['addr:postcode']}</p>` : ''}
+                    ${feature.properties['description'] ? `<p><strong>Description:</strong> ${feature.properties['description']}</p>` : ''}
+                    ${feature.properties['building'] ? `<p><strong>Building:</strong> ${feature.properties['building']}</p>` : ''}
+                    ${feature.properties['wheelchair'] ? `<p><strong>Wheelchair Access:</strong> ${feature.properties['wheelchair']}</p>` : ''}
+                    ${feature.properties['opening_hours'] ? `<p><strong>Opening Hours:</strong> ${feature.properties['opening_hours']}</p>` : ''}
+                    ${feature.properties['cuisine'] ? `<p><strong>Cuisine:</strong> ${feature.properties['cuisine']}</p>` : ''}
+                    <button style="background-color: #3498db; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; margin-top: 10px;" onclick="routeToBuilding('${feature.properties.name}')">
                         Route to this destination
                     </button>
                 </div>
@@ -154,7 +159,7 @@ function displayFilteredFeatures(filterType) {
     updateStatus(`${filteredFeatures.length} features displayed`);
 }
 
-// Populate the sidebar with university names
+// Populating the sidebar with university names
 function populateSidebar() {
     const universityList = document.getElementById('universityList');
     universityList.innerHTML = '';
@@ -279,8 +284,7 @@ async function routeToBuilding(buildingName) {
 
         // Adding markers
         const startMarker = L.marker(userLocationMarker.getLatLng()).addTo(map);
-        const endMarker = L.marker([targetCoordinates.lat, targetCoordinates.lng]).addTo(map);
-        markers.push(startMarker, endMarker);
+        markers.push(startMarker);
 
         // Calculating route
         const mode = document.getElementById('travelMode').value;

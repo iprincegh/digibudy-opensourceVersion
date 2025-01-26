@@ -121,7 +121,7 @@ def get_route():
 
 if __name__ == '__main__':
     try:
-        logger.info("Starting Flask application...")
+        logger.info("Starting Digibuddy...")
         app.run(debug=True)
     except Exception as e:
         logger.error(f"Failed to start application: {str(e)}")
