@@ -190,7 +190,49 @@ function populateSidebar() {
         }
     });
 }
+// Function to filter buildings based on search input
+function filterBuildings() {
+    const searchInput = document.getElementById('searchBuildings').value.toLowerCase();
+    const universityList = document.getElementById('universityList');
+    universityList.innerHTML = '';
 
+    const filteredBuildings = buildingsList.filter(building => 
+        building.name.toLowerCase().includes(searchInput)
+    );
+
+    if (filteredBuildings.length === 0) {
+        const noResultsItem = document.createElement('li');
+        noResultsItem.textContent = 'No results found';
+        noResultsItem.classList.add('no-results');
+        universityList.appendChild(noResultsItem);
+    } else {
+        filteredBuildings.forEach(building => {
+            if (building.properties.university) {
+                const listItem = document.createElement('li');
+                listItem.textContent = building.name;
+                listItem.onclick = () => {
+                    const coords = building.geometry.coordinates;
+                    let latlng;
+                    if (building.geometry.type === 'Polygon') {
+                        latlng = getPolygonCentroid(coords[0]);
+                    } else if (building.geometry.type === 'Point') {
+                        latlng = [coords[1], coords[0]];
+                    } else {
+                        console.error('Unsupported geometry type for building:', building);
+                        updateStatus('Unsupported geometry type for selected building');
+                        return;
+                    }
+                    map.setView(latlng, 17);
+                    L.popup()
+                        .setLatLng(latlng)
+                        .setContent(`<h3>${building.name}</h3>`)
+                        .openOn(map);
+                };
+                universityList.appendChild(listItem);
+            }
+        });
+    }
+}
 // Function to calculate the centroid of a polygon
 function getPolygonCentroid(coords) {
     let centroid = coords.reduce((acc, coord) => {
@@ -223,7 +265,7 @@ async function calculateRoute(start, end, mode) {
                     lat: end.lat,
                     lng: end.lng
                 },
-                mode: mode
+                mode: mode // Ensure mode is passed correctly
             })
         });
 
@@ -244,6 +286,7 @@ async function calculateRoute(start, end, mode) {
     }
 }
 
+
 // Routing to selected building from current location
 async function routeToBuilding(buildingName) {
     if (!userLocationMarker) {
@@ -258,25 +301,14 @@ async function routeToBuilding(buildingName) {
 
         let targetCoordinates;
         if (building.geometry.type === 'Point') {
-            // Using coordinates directly for Point geometry
             targetCoordinates = {
                 lat: building.geometry.coordinates[1],
                 lng: building.geometry.coordinates[0]
             };
         } else if (building.geometry.type === 'Polygon') {
-            // Calculating the centroid for Polygon
             const coords = building.geometry.coordinates[0]; // Outer boundary
-            let centroid = coords.reduce((acc, coord) => {
-                return {
-                    lat: acc.lat + coord[1],
-                    lng: acc.lng + coord[0]
-                };
-            }, { lat: 0, lng: 0 });
-
-            centroid.lat /= coords.length;
-            centroid.lng /= coords.length;
-
-            targetCoordinates = centroid;
+            const centroid = getPolygonCentroid(coords);
+            targetCoordinates = { lat: centroid[0], lng: centroid[1] };
         } else {
             updateStatus('Unsupported geometry type');
             return;
@@ -284,10 +316,13 @@ async function routeToBuilding(buildingName) {
 
         // Adding markers
         const startMarker = L.marker(userLocationMarker.getLatLng()).addTo(map);
-        markers.push(startMarker);
+        const endMarker = L.marker(targetCoordinates).addTo(map);
+        markers.push(startMarker, endMarker);
+
+        // Get the selected travel mode
+        const mode = document.getElementById('travelMode').value;
 
         // Calculating route
-        const mode = document.getElementById('travelMode').value;
         routeLayer = await calculateRoute(
             userLocationMarker.getLatLng(),
             targetCoordinates,
@@ -297,11 +332,37 @@ async function routeToBuilding(buildingName) {
         if (routeLayer) {
             routeLayer.addTo(map);
             map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+            updateStatus(`Routing to ${buildingName} using ${mode}`);
+        } else {
+            updateStatus('Failed to calculate route');
         }
     } else {
         updateStatus('Building not found or invalid geometry');
     }
 }
+
+// event listener for travel mode changes
+document.getElementById('travelMode').addEventListener('change', async function () {
+    // Only update the route if a building is already selected
+    if (markers.length > 0 && markers.length === 2) {
+        const startPoint = markers[0].getLatLng();
+        const endPoint = markers[1].getLatLng();
+        const mode = this.value;
+
+        clearRoute();
+
+        // Recalculate and update the route
+        routeLayer = await calculateRoute(startPoint, endPoint, mode);
+
+        if (routeLayer) {
+            routeLayer.addTo(map);
+            map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+            updateStatus(`Route updated for travel mode: ${mode}`);
+        } else {
+            updateStatus('Failed to update route for travel mode');
+        }
+    }
+});
 
 // Clearing existing route and markers
 function clearRoute() {
@@ -311,8 +372,8 @@ function clearRoute() {
     }
     markers.forEach(marker => map.removeLayer(marker));
     markers = [];
-    startPoint = null;
 }
+
 
 // location tracking
 function setupLocationTracking() {
@@ -342,7 +403,7 @@ function setupLocationTracking() {
     });
 }
 
-// Add dropdown listener for filtering
+// dropdown listener for filtering
 function addFilterListener() {
     document.getElementById('featureFilter').addEventListener('change', function() {
         const selectedFilter = this.value;
@@ -350,54 +411,54 @@ function addFilterListener() {
     });
 }
 
-document.getElementById('travelMode').addEventListener('change', async function () {
-    if (routeLayer && markers.length >= 2) {
-        const startPoint = markers[0].getLatLng(); // Starting marker
-        const endPoint = markers[1].getLatLng(); // Ending marker
-        const mode = this.value;
+document.addEventListener('DOMContentLoaded', async function () {
+    try {
+        initializeMap();
+        setupLocationTracking();
+        startLocationTracking(); 
+        await loadBuildingData();
+        addFilterListener();
 
-        // Clear the existing route
-        clearRoute();
+        document.getElementById('locateMe').addEventListener('click', function () {
+            if (userLocationMarker) {
+                map.setView(userLocationMarker.getLatLng(), 17);
+            } else {
+                startLocationTracking();
+            }
+        });
 
-        // Recalculate and display the new route
-        routeLayer = await calculateRoute(startPoint, endPoint, mode);
+        document.getElementById("travelMode").addEventListener("change", async function () {
+            if (routeLayer && markers.length === 2) {
+                const startPoint = markers[0].getLatLng();
+                const endPoint = markers[1].getLatLng();
+                const mode = this.value;
 
-        if (routeLayer) {
-            routeLayer.addTo(map);
-            map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
-            updateStatus('Route updated for new travel mode');
-        } else {
-            updateStatus('Failed to update route for new travel mode');
-        }
+                // Clear the existing route
+                clearRoute();
+
+                // Recalculate and display the new route
+                routeLayer = await calculateRoute(startPoint, endPoint, mode);
+
+                if (routeLayer) {
+                    routeLayer.addTo(map);
+                    map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+                    updateStatus(`Route updated for new travel mode: ${mode}`);
+                } else {
+                    updateStatus("Failed to update route for new travel mode");
+                }
+            } else {
+                updateStatus("Please set start and end points before changing travel mode");
+            }
+        });
+
+        console.log('Application initialized successfully');
+    } catch (error) {
+        console.error('Error during initialization:', error);
+        updateStatus('Error initializing application');
     }
 });
 
-function setupLocationTracking() {
-    map.on('locationfound', function (e) {
-        const radius = e.accuracy / 2;
-
-        if (userLocationMarker) {
-            userLocationMarker.setLatLng(e.latlng);
-            userLocationCircle.setLatLng(e.latlng);
-            userLocationCircle.setRadius(radius);
-        } else {
-            userLocationMarker = L.marker(e.latlng).addTo(map);
-            userLocationCircle = L.circle(e.latlng, {
-                radius: radius,
-                color: '#4299e1',
-                fillColor: '#4299e1',
-                fillOpacity: 0.15
-            }).addTo(map);
-        }
-
-        updateStatus('Location found');
-    });
-
-    map.on('locationerror', function (e) {
-        console.error('Location error:', e.message);
-        updateStatus('Could not find location');
-    });
-}
+// Duplicate function removed
 
 function startLocationTracking() {
     map.locate({ setView: true, maxZoom: 16 });
@@ -412,14 +473,14 @@ function updateStatus(message) {
     }
 }
 
-// Initialize map and features
+// Initializing map and features
 document.addEventListener('DOMContentLoaded', async function () {
     try {
         initializeMap();
-        setupLocationTracking(); // This ensures location tracking is initialized
-        startLocationTracking(); // Optional: Auto-start tracking if required
-        await loadBuildingData(); // Load building data into the map
-        addFilterListener(); // Add dropdown filter functionality
+        setupLocationTracking();
+        startLocationTracking(); 
+        await loadBuildingData();
+        addFilterListener();
 
         document.getElementById('locateMe').addEventListener('click', function () {
             if (userLocationMarker) {
