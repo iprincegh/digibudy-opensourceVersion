@@ -12,7 +12,7 @@ Effortlessly navigate your campus with ease, no prior knowledge is needed.
   5. Ease of Access: Scroll through campus buildings and choose the option you wish to navigate.
 
 ## Data Sources
-    API: OpenRouteService(OSR):
+    API: OpenRouteService(ORS):
     Routes in Munster, all paths including Bicycle and footpaths
     
     Primary data source:
